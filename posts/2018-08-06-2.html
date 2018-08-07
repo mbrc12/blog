@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>mbrc - GSoC 2018 with Eta. Etanol.</title>
+        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/syntax.css" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js">
+</script>
+   </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a id="blogname" href="../">mbrc</a>
+            </div><br>
+            <nav>
+                <a href="../about.html">About me</a>
+                <a href="../contact.html">Write to me</a>
+                <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>GSoC 2018 with Eta. Etanol.</h1>
+            <article>
+    <section class="header">
+        Posted on August  6, 2018
+        
+    </section>
+    <section>
+        <p><em>In the summer of 2018, I worked with Eta, for my <a href="https://summerofcode.withgoogle.com">Google Summer of Code</a> project. My project <code>etanol</code> is a tool to analyse JVM bytecode for purity and nullability.</em></p>
+<p>If you’re a programmer who keeps an eye on the latest buzz in the community, you’re certain to have heard about functional programming. The popularity of functional programming has grown rapidly in recent years, and rightfully so. As I wrote my entire project in Haskell, the benefits were highly evident. With ~4K lines of code, the number of bugs I faced were downright infinitesimal <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> This is a signature of functional programming languages in general, and Haskell in particular. The devices these languages employ to improve code quality and reduce bugs / other types of unwanted behavior is spectacular and most developers nowadays have begun to appreciate how helpful these systems are. But nothing is perfect.</p>
+<p>Haskell runs natively on the system, unlike, for example, Java. That Java runs on a well defined VM and not natively on the system has far reaching implications for the application / library author. For most type of programs, you get away with using libraries that don’t even interact with the system beyond the VM. As a result, you can write the code in a system (say Linux) and sleep well, confident that the JVM will always have the <em>exact same behavior</em> <a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>, no matter what the underlying platform is. This considerably reduces community effort, because only the JVM needs to be written for every system. Nearly everything else can use whatever the JVM provides (and that’s a lot of functionality). Even better, the JVM no longer <em>needs</em> to be written. It already has stable and strongly tested implementations for nearly all the platforms in use. Ofcourse, it is still updated regularly, in response to modern needs, but most of the work is done. If you’re an application developer, you certainly don’t want to lose this portability. <a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a></p>
+<p>But Java as a language lacks many of the features that Haskell provides. You don’t get first order functions <a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a> You don’t get powerful types. You don’t get null safety<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.</p>
+<p>So can’t we get the best of both the worlds? Write Haskell on the JVM ? You certainly have other functional languages like Clojure and Scala on the JVM, but we want Haskell and nothing else. Some people would ask why, but they wouldn’t if they tried out Haskell for a few months. It’s just too elegant to forget. Once you get the flavor, it’s simply too difficult to walk away. One of the good things about Haskell is that you are always learning. Whatever you write, there is always a better way, there is always something to learn. And all this is beyond the very tangible benefits like bug reduction, null safety etc.</p>
+<p>So back to our question, can’t we get the best of both the words? And the answer is an emphatic “yes”, with <a href="http://github.com/typelead/eta">Eta</a>. Eta works not only to run Haskell on the JVM, but also to preserve the <em>Haskell elegance</em> when operating across the thorny borders of Java interop. You want this, because you’re a Haskell programmer, and you don’t want anything other than elegant code. The last thing you want is to write demotivating Java-like code in your Garden of Purity <a href="#fn6" class="footnote-ref" id="fnref6"><sup>6</sup></a>. Eta solves this beautifully, and they’re still working to make it better. By the time you read this, it is most likely even better than it is right now.</p>
+<p>My work in Eta was to alleviate the pains of the Eta programmer a little further. Basically, to call Java methods, Eta requires you to declare them and their return / input parameters in a Haskell way, much like Haskell-C ffi (read more <a href="https://eta-lang.org/docs/user-guides/eta-user-guide/java-interop/java-interop-basics">here</a>). But we as programmers want to avoid so-called ‘boilerplate’, and do not believe in writing code that could possibly be written by the computer itself <a href="#fn7" class="footnote-ref" id="fnref7"><sup>7</sup></a>. The tool I worked on, <a href="https://github.com/mbrc12/etanol/">etanol</a>, attempts to do the job for you in most cases.</p>
+<p>But there is no real job there right? Isn’t it just a sophisticated version of the programmers favorite keystrokes <code>Ctrl-C Ctrl-V</code> ? You just parse all Java field/method names and and write the corresponding Haskelly import in the Eta code?</p>
+<p>Well, not exactly. Java is not Haskell, and its types don’t reflect its behavior as well as Haskell does. If you do IO, in Haskell your type has <code>IO ..</code> <a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a>. But Java doesn’t care about that.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode java"><code class="sourceCode java"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">public</span> <span class="dt">int</span> <span class="fu">f</span>(<span class="dt">int</span> x) {</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">    <span class="kw">return</span> x + <span class="dv">1</span>;</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">}</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb1-5" data-line-number="5"><span class="kw">public</span> <span class="dt">int</span> <span class="fu">g</span>(<span class="dt">int</span> x) {</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">    <span class="fu">SendRocketToMars</span>();</a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">    <span class="kw">return</span> x + <span class="dv">1</span>;</a>
+<a class="sourceLine" id="cb1-8" data-line-number="8">}</a>
+<a class="sourceLine" id="cb1-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb1-10" data-line-number="10"><span class="kw">public</span> <span class="dt">int</span> <span class="fu">h</span>(<span class="dt">int</span> x) {</a>
+<a class="sourceLine" id="cb1-11" data-line-number="11">    <span class="bu">System</span>.<span class="fu">out</span>.<span class="fu">println</span>(x);</a>
+<a class="sourceLine" id="cb1-12" data-line-number="12">    <span class="kw">return</span> x + <span class="dv">1</span>;</a>
+<a class="sourceLine" id="cb1-13" data-line-number="13">}</a></code></pre></div>
+<p>In the above code, <code>f</code>, <code>g</code> and <code>h</code> are all <code>(I)I</code> to the JVM <a href="#fn9" class="footnote-ref" id="fnref9"><sup>9</sup></a>, but of course, they all have widely different <em>effects</em>. One costs nothing, the other costs a fortune, and the third one can cause order-dependent behavior <a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a>. You don’t want this kind of behavior in Haskell. The types should be as detailed as they can be, and in the best case completely specify the behavior of the code (A reason why the Haskell community is slowly appreciating the power of <a href="https://en.wikipedia.org/wiki/Dependent_type">dependent types</a>).</p>
+<p>If we reduce this problem to the bare basics, the problem that remains is to <em>detect</em> whether a particular method is <em>pure</em> or <em>impure</em>, which would imply whether we need a monadic <a href="#fn11" class="footnote-ref" id="fnref11"><sup>11</sup></a> return or a simple return (the difference between <code>a -&gt; IO b</code> and <code>a -&gt; b</code>). Note that <code>a -&gt; b</code> for a Java function is an expression of extreme confidence. We’re sure that this is the same as a Haskell <code>a -&gt; b</code>, no bad behavior whatsoever. If this is not the case, we can always rely on <code>a -&gt; IO b</code>, and inform the compiler that please do this in order, no tricks by changing orders etc. These kinds of restrictions cripple the compiler from performing the optimizations it normally can when it knows that functions have no side effects. Our goal is to detect pure functions with as high an accuracy as possible.</p>
+<p>But the story doesn’t end there. How would you like to receive a <code>null</code> when you wanted an <code>Object</code>? Surely, this is common news in Java land, people are less trusting there. But Haskell is different. When we are promised an <code>Object</code>, we get one, no exceptions <a href="#fn12" class="footnote-ref" id="fnref12"><sup>12</sup></a>. If someone is not sure whether she can deliver an <code>Object</code>, she politely mentions that using a <code>Maybe</code>. That is the Haskell style. Porting Java to Haskell also implies protecting the innocent <a href="#fn13" class="footnote-ref" id="fnref13"><sup>13</sup></a> from <code>null</code> and etanol also attempts to do this, by detecting <em>nullability</em> for the programmer.</p>
+<p>The way etanol does all this is by imposing a set of rules on the code, which imply the purity/impurity of the code. These rules are written into the source code for etanol, whose main job is to first parse JVM bytecode files, to produce an intermediate representation. Next, etanol steps through the code one instruction at a time, and assigns that (method or field) a result.</p>
+<p>Of course, the most important task to solve in this approach is deciding the set of rules to use, and I had to spend quite a lot of time pondering on this part, and everytime I had an idea, I had to cross verify with my mentors to make sure it made sense. The issue is that there is no single best solution to this, and everything you do here lies on a tradeoff curve. If you try to make the rules too detailed, the resulting implementation would be ridiculously large, and require a lot of maintainance. And its not as if you can gain much from more detail. In my experience, a lot of the detail we might be tempted to include infact affects the results of only a small percentage of the code the tool will ever analyse.</p>
+<p>For example consider an example of a (simplified) rule that is enforced by etanol for <code>Pure</code> methods :</p>
+<blockquote>
+<p>Pure methods cannot modify or assign Object/Array type values.</p>
+</blockquote>
+<p>It is obvious that not every method that assigns Object type values is impure. But still Etanol choses to enforce this rule. The main reason here is that allowing assigning Object type values can go very deep, in the sense that suppose you have an Object <code>A</code> which has a field <code>f</code> which is again an Object and has a field <code>g</code>. Then you can certainly update <code>g</code> of <code>A.f</code> using <code>A.f.g = ...</code>. The problem is that you can also choose to do</p>
+<pre><code>.. x = A.f;
+x.g = ..</code></pre>
+<p>And then the modifications become hard to follow for any program <a href="#fn14" class="footnote-ref" id="fnref14"><sup>14</sup></a>. Of course, there are pointer based methods that can analyse arbitrarily deep nestings of field updates. But the point here is that, in most cases, you can separate the pure code from code that performs updates, in a way, such that your pure code is actually marked <code>Pure</code> by etanol.</p>
+<p>The rules are still far from perfect, but the major guideline behind the rules has always been this:</p>
+<blockquote>
+<p>It should (almost always) be possible to separate the pure code in a way that the rules judge pure code as actually <code>Pure</code>.</p>
+</blockquote>
+<p>This decision considerably simplifies the implementation, and makes modifications easier. If you happen to get stuck in a rule that could practically be added/removed from the codebase, I will be glad to do it!</p>
+<p>The current rules are described in somewhat more detail on the <a href="https://github.com/mbrc12/etanol/wiki">wiki</a> <a href="#fn15" class="footnote-ref" id="fnref15"><sup>15</sup></a>.</p>
+<p>By the way, in case you’re someone who wants to read the code for etanol, I would have to warn you that the code is currently quite unorganised. The main reason behind this is that almost everything I know about Haskell, I’ve learnt during the time I’ve written etanol. As a result, the older code parts clearly deviate from what is considered good Haskell style. I can only hope that the newer parts are more readable. In some cases, I also changed past code to fix major code style issues, but not everything is fixed.</p>
+<p>Apart from aesthetics, etanol also suffers from memory leaks, and eats up considerable memory when working on large JAR files, like for example the <code>rt.jar</code> which contains the Java Standard Library. But the good news is that, etanol is not too slow to use, and most use cases don’t require the user to analyse <code>rt.jar</code>, because the output analysis can be easily downloaded and used, without any extra work. Since the problem is really one-time (during analysing very large libraries), I only spent a stretch of around 5 days trying to fix the memory leak. Although I <em>did</em> have some success, it was certainly not satisfactory, and I was completely at my wit’s end trying to figure out where my code gobbled up memory. I will be extremely happy if someone can point out fixes!</p>
+<p>As for testing, etanol has been tested on <strong>Java 7’s rt</strong>, <strong>Java 8’s rt</strong>, and <a href="https://github.com/google/guava"><strong>Google’s Guava 25</strong></a>, as well as the recently added specific test suite in <code>etanol/test</code>. In <code>etanol/test</code>, there is a mechanism in which one can add Java classes to <code>etanol/test/Tests/</code> and specify the expected results in <code>Spec.hs</code>. It is intended to be a basic system to make sure everything works as expected, and so far I haven’t encountered any <em>wrong</em> answers.</p>
+<p>Well, I say, I haven’t encountered <em>wrong</em> answers, but I certainly encountered <em>weird</em> answers. Now, stand back, I’ll embarrass myself.</p>
+<blockquote>
+<p><code>java.lang.Math.sin</code> is <code>Unanalyzable</code> to etanol.</p>
+</blockquote>
+<p>I recently discovered this while trying to find tests for etanol! But before you yell at me, I have to say something in my defense,</p>
+<blockquote>
+<p><code>java.lang.Math.sin</code> uses native methods under the hood, and we don’t know anything about native methods because they lie in the dark realm of native code.</p>
+</blockquote>
+<p>Really, on a more serious note, you can’t really do anything about native code in general, they can do whatever they want, maybe send an email before returning <code>sin(x)</code>. But the thing is, in this case, <em>we know that our <code>sin</code> doesn’t do that!</em> I’ll probably need to make a rule to explicitly consider all math methods in <code>java.lang.Math</code> pure. But we really can’t do anything in general …</p>
+<p>… other than probably adding a custom marking system in etanol. Then you can direct etanol to treat specific methods/fields as whatever you want, not the result etanol gets with all its wisdom. Because as we see above, that wisdom can be really weird. This is one of the major extensions to etanol I’d like to work on. But there are a few things to resolve.</p>
+<ul>
+<li>Can we really expect the users to mark methods as Pure etc. because that requires writing down the explicit signature of the method and the type, like for example <code>java.lang.Math.sin (D)D</code>.</li>
+<li>Doesn’t this go against the problem we set out to solve, simplify using Java FFI in eta?</li>
+</ul>
+<p>Well not really. If the user doesn’t need customization, she can simply not specify any special rules. But we want to keep options open for other users who need that customizability. The last thing you want is to write a Physics simulator and have every function marked <code>Impure</code> because all of them do some trigonometry!</p>
+<p>So yeah, a lot of work is left to be done, but a lot (I hope) has been done as well. This is my first time doing an open source project, so I’m sure I have a lot of blind spots, mistakes I couldn’t figure out yet, improvements that should be done. But still, doing this has been very enjoyable. Haskell is simply to vast to master in 3 months, but I would say I’m more confident in my Haskell skills now than I was 3 months ago. And the nicest thing is that I got to investigate the fundamentals of the JVM, something I’m sure I would never had the patience to do without a concrete project in mind <a href="#fn16" class="footnote-ref" id="fnref16"><sup>16</sup></a>.</p>
+<p>With that said, I’ll end this post. I hope to continue developing <code>etanol</code> and adding more features. Feel free to ping me if you too have something in mind!</p>
+<p>Thanks for reading!</p>
+<p><em>Special thanks to GSoC and my mentors <a href="https://github.com/rahulmutt">Rahul Muttineni</a>, and <a href="https://github.com/jyothsnasrinivas">Jyothsna Patnam</a> for suggesting the project and providing me with such a wonderful opportunity. And of course, thanks to <a href="https://github.com/NickSeagull">Nikita Tchayka</a> for suggesting the name <code>etanol</code>!</em></p>
+<section class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>I did face a major bug but that was due to my ignorance. I used the <code>Prelude.head</code> extensively, and that is a <strong>very</strong> bad practice unless your code also proves that the current list is non-null, something like <code>unless (null xs) $ head xs</code>.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn2"><p>Few exceptions as usual.<a href="#fnref2" class="footnote-back">↩</a></p></li>
+<li id="fn3"><p>Unless you’re specifically working with native stuff or need high doses of microoptimized code, say in a high performance game.<a href="#fnref3" class="footnote-back">↩</a></p></li>
+<li id="fn4"><p>Or even if you do, they don’t look nearly as good as in Haskell.<a href="#fnref4" class="footnote-back">↩</a></p></li>
+<li id="fn5"><p>Same in these cases, as above. Doing these things <em>may be possible</em> in Java, but in Haskell they are a part of language style, which makes things easier. When many people use a more functional style, you are also required to do that, and its generally a good thing.<a href="#fnref5" class="footnote-back">↩</a></p></li>
+<li id="fn6"><p>Haskell can also be used impurely, like in the infamous <code>unsafePerformIO</code>. But its considered good etiquette not to dwell on it too much.<a href="#fnref6" class="footnote-back">↩</a></p></li>
+<li id="fn7"><p>Have you ever cursed the C++ compiler for yelling that you didn’t put a semicolon somewhere? If it knows that it is missing, why doesn’t it just put it! The situation is the same here except for that the C++ compiler had a good reason for pointing that out, because you might have wanted to do something else.<a href="#fnref7" class="footnote-back">↩</a></p></li>
+<li id="fn8"><p>Unless ofcourse, <code>unsafePerformIO</code><a href="#fnref8" class="footnote-back">↩</a></p></li>
+<li id="fn9"><p>A fancier way of saying that the function takes an <code>int</code> and returns an <code>int</code>, used by the JVM.<a href="#fnref9" class="footnote-back">↩</a></p></li>
+<li id="fn10"><p>Most evidently, during concurrent programming<a href="#fnref10" class="footnote-back">↩</a></p></li>
+<li id="fn11"><p>Please be cursed by the Monad at your own risk. Seriously, there are an infinite number of Monad tutorials on the internet, but it is known that nearly none of them make sense, due to <strong>The Curse of the Monad</strong><a href="#fnref11" class="footnote-back">↩</a></p></li>
+<li id="fn12"><p>And this is the last time I mention that you can bypass this as well, but thats not good/encouraged style<a href="#fnref12" class="footnote-back">↩</a></p></li>
+<li id="fn13"><p>Well no one who has used Monads to do IO is innocent, but thats a different story.<a href="#fnref13" class="footnote-back">↩</a></p></li>
+<li id="fn14"><p>Primarily because of the concept of Fresh objects, objects that are newly created in this function. Modifying such stuff rarely affects purity, but in this case, it would be hard to track if <code>x</code> is indeed Fresh or not, because in Java you can get the same effect in so many ways. The most important thing here is again the tradeoff between effectiveness and code simplicity.<a href="#fnref14" class="footnote-back">↩</a></p></li>
+<li id="fn15"><p>The wiki is not always up to date, and the README is updated faster, so also consider looking at the README<a href="#fnref15" class="footnote-back">↩</a></p></li>
+<li id="fn16"><p>On a more unimportant note, I got to learn about <code>git</code> and its features. It would probably be impossible to appreciate the power of git without working a codebase that actually <em>needs</em> version control<a href="#fnref16" class="footnote-back">↩</a></p></li>
+</ol>
+</section>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
